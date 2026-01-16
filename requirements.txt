@@ -1,0 +1,16 @@
+# NRC Technical Letters Dashboard Dependencies
+
+# Web Framework
+streamlit>=1.28.0
+
+# HTTP Requests
+requests>=2.31.0
+
+# LlamaCloud Integration
+llama-cloud-services>=0.1.0
+llama-index>=0.10.0
+
+# Core utilities (usually included with Python)
+# json - built-in
+# base64 - built-in
+# os - built-in
