@@ -206,8 +206,8 @@ st.markdown("""
 # --- API Functions ---
 def get_core42_response(role: str, content: str, system_instruction: str = None) -> str:
     """Sends a message to the Core42 API."""
-    API_KEY = "81052a984bee43ee865f296e5a88e5f1"
-    API_URL = "https://api.core42.ai/v1/chat/completions"
+    API_KEY = "key"
+    API_URL = "url"
     
     if not API_KEY:
         return "Error: API Key is missing."
@@ -656,3 +656,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
