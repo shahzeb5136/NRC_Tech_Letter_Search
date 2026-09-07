@@ -1,0 +1,78 @@
+graph LR
+    %% Global Styling
+    classDef user stroke:#fff,stroke-width:2px,fill:#2c3e50,color:#fff
+    classDef interface stroke:#00A3AD,stroke-width:2px,fill:#001f21,color:#fff
+    classDef logic stroke:#8CC63F,stroke-width:2px,fill:#1e2d1e,color:#fff
+    classDef external stroke:#f39c12,stroke-width:2px,fill:#2d251a,color:#fff
+    classDef storage stroke:#9b59b6,stroke-width:2px,fill:#241d2b,color:#fff
+
+    %% Components
+    U((<b>User</b>)):::user
+    
+    subgraph UI [Frontend Layer]
+        APP["⚛️ NRC Query App<br/>(Streamlit)"]:::interface
+    end
+
+    subgraph Processing [Orchestration Layer]
+        RAG_FUNC["⚙️ RAG Engine<br/>(run_custom_rag)"]:::logic
+        FILE_FUNC["📂 PDF Handler<br/>(find_pdf_file)"]:::logic
+    end
+
+    subgraph Cloud [External AI Services]
+        LLAMA[("🗂️ LlamaCloud<br/>(Vector Index)")]:::external
+        CORE42{{"🧠 Core42<br/>(GPT-4o)"}}:::external
+    end
+
+    subgraph Local [Data Persistence]
+        PDFS[("./Data/*.pdf")]:::storage
+    end
+
+    %% Connections
+    U -->|Enter Query| APP
+    APP -->|Trigger Search| RAG_FUNC
+    APP -->|Request File| FILE_FUNC
+    
+    RAG_FUNC <-->|Context Retrieval| LLAMA
+    RAG_FUNC <-->|JSON Synthesis| CORE42
+    
+    FILE_FUNC -->|Scan Directories| PDFS
+    
+    %% Return flows (simplified)
+    CORE42 -.->|Parsed Data| APP
+    PDFS -.->|View / Download| APP
+	
+	
+	
+sequenceDiagram
+    autonumber
+    actor User
+    participant ST as Streamlit UI
+    participant LC as LlamaCloudIndex
+    participant AI as Core42 (GPT-4o)
+    participant FS as File System (OS/Local)
+
+    User->>ST: Enters Query & Clicks Search
+    ST->>LC: retrieve(query, top_k=5)
+    LC-->>ST: Returns List of Nodes (Text Chunks + Metadata)
+    
+    Note over ST, AI: System Prompt + Context Chunks + Query
+    
+    ST->>AI: get_core42_response(role="user", content=payload)
+    AI-->>ST: Returns JSON (document_name, section, summary, excerpts)
+    
+    ST->>ST: json.loads() & Save to session_state
+    
+    loop For each Reference in Results
+        ST->>FS: find_pdf_file(document_name)
+        FS-->>ST: Return Absolute Path
+        ST->>ST: Render Result Card (Summary, Key Excerpts)
+        
+        alt PDF Found
+            ST->>User: Show "Open in System Viewer" & "Download"
+        else PDF Missing
+            ST->>User: Show "File not found" Warning
+        end
+    end
+
+    User->>ST: Clicks "Open"
+    ST->>FS: os.startfile(pdf_path)

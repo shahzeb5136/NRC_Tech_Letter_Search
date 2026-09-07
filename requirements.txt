@@ -1,0 +1,33 @@
+# NRC Technical Letter Query System - runtime dependencies
+# Python 3.11+ (developed on 3.12). Install with:  pip install -r requirements.txt
+
+# UI
+streamlit>=1.38
+
+# PDF extraction and rendering
+pymupdf>=1.24
+
+# Local index (vectors + lexical)
+chromadb>=1.0
+rank-bm25>=0.2.2
+sentence-transformers>=3.0
+transformers>=4.40
+torch>=2.2
+numpy>=1.26
+tiktoken>=0.7
+
+# Data / config
+pandas>=2.2
+pillow>=10
+pydantic>=2.7
+pydantic-settings>=2.3
+python-dotenv>=1.0
+pyyaml>=6.0
+
+# LLM providers (install the ones you use; all three are optional at runtime)
+anthropic>=0.97
+openai>=1.50
+google-genai>=1.0
+
+# Development
+pytest>=8

@@ -1,0 +1,272 @@
+{
+  "summary": {
+    "provider": "google/gemini-2.5-pro",
+    "questions": 12,
+    "answerable_answered": 9,
+    "answerable_total": 9,
+    "expected_doc_cited_rate": 1.0,
+    "abstention_rate_on_unanswerable": 1.0,
+    "claims_displayed_over_generated": 0.9772727272727273,
+    "quotes_exact_rate": 0.8979591836734694,
+    "quotes_fuzzy_rate": 0.08163265306122448,
+    "quotes_failed_rate": 0.02040816326530612,
+    "errors": 0,
+    "elapsed_s": 391.5
+  },
+  "results": [
+    {
+      "question": "What off-gas treatment technologies are considered for molten salt reactors and what are their main limitations?",
+      "answerable": true,
+      "status": "partial",
+      "abstained_correctly": null,
+      "expected_docs": [
+        "ML25002A104"
+      ],
+      "cited_docs": [
+        "ML25002A104"
+      ],
+      "expected_doc_cited": true,
+      "claims_total": 2,
+      "claims_displayed": 2,
+      "claims_withheld": 0,
+      "quotes_exact": 2,
+      "quotes_fuzzy": 0,
+      "quotes_failed": 0,
+      "seconds": 28.388,
+      "audit_id": "858054f2334b46f0",
+      "error": ""
+    },
+    {
+      "question": "Which sorbent materials are evaluated for iodine capture in molten salt reactor off-gas systems?",
+      "answerable": true,
+      "status": "answered",
+      "abstained_correctly": null,
+      "expected_docs": [
+        "ML25002A104"
+      ],
+      "cited_docs": [
+        "ML25002A104"
+      ],
+      "expected_doc_cited": true,
+      "claims_total": 7,
+      "claims_displayed": 7,
+      "claims_withheld": 0,
+      "quotes_exact": 6,
+      "quotes_fuzzy": 2,
+      "quotes_failed": 0,
+      "seconds": 47.418,
+      "audit_id": "2600a15dae5a4e2b",
+      "error": ""
+    },
+    {
+      "question": "How does the reexamination of NUREG-1829 change the LOCA frequency estimates?",
+      "answerable": true,
+      "status": "answered",
+      "abstained_correctly": null,
+      "expected_docs": [
+        "ML24193A122"
+      ],
+      "cited_docs": [
+        "ML24193A122"
+      ],
+      "expected_doc_cited": true,
+      "claims_total": 6,
+      "claims_displayed": 6,
+      "claims_withheld": 0,
+      "quotes_exact": 6,
+      "quotes_fuzzy": 0,
+      "quotes_failed": 0,
+      "seconds": 54.53,
+      "audit_id": "59eeb81b5a8b461b",
+      "error": ""
+    },
+    {
+      "question": "What reference electrodes are discussed for electrochemical monitoring in molten salts?",
+      "answerable": true,
+      "status": "answered",
+      "abstained_correctly": null,
+      "expected_docs": [
+        "ML25080A225"
+      ],
+      "cited_docs": [
+        "ML25080A225"
+      ],
+      "expected_doc_cited": true,
+      "claims_total": 4,
+      "claims_displayed": 4,
+      "claims_withheld": 0,
+      "quotes_exact": 7,
+      "quotes_fuzzy": 0,
+      "quotes_failed": 0,
+      "seconds": 36.762,
+      "audit_id": "9c80922205a04017",
+      "error": ""
+    },
+    {
+      "question": "What are the main knowledge gaps for electrical cable degradation in long-term operation?",
+      "answerable": true,
+      "status": "answered",
+      "abstained_correctly": null,
+      "expected_docs": [
+        "ML25233A048"
+      ],
+      "cited_docs": [
+        "ML25233A048"
+      ],
+      "expected_doc_cited": true,
+      "claims_total": 2,
+      "claims_displayed": 2,
+      "claims_withheld": 0,
+      "quotes_exact": 2,
+      "quotes_fuzzy": 0,
+      "quotes_failed": 0,
+      "seconds": 40.134,
+      "audit_id": "09d75ba4ddff4099",
+      "error": ""
+    },
+    {
+      "question": "Which chemical process safety hazards are identified for TRISO fuel fabrication facilities?",
+      "answerable": true,
+      "status": "answered",
+      "abstained_correctly": null,
+      "expected_docs": [
+        "ML25230A132"
+      ],
+      "cited_docs": [
+        "ML25230A132"
+      ],
+      "expected_doc_cited": true,
+      "claims_total": 10,
+      "claims_displayed": 10,
+      "claims_withheld": 0,
+      "quotes_exact": 11,
+      "quotes_fuzzy": 0,
+      "quotes_failed": 0,
+      "seconds": 47.825,
+      "audit_id": "231e96cf8325447f",
+      "error": ""
+    },
+    {
+      "question": "What machine learning approaches were investigated for BWR recirculation pump condition monitoring?",
+      "answerable": true,
+      "status": "answered",
+      "abstained_correctly": null,
+      "expected_docs": [
+        "ML25253A274"
+      ],
+      "cited_docs": [
+        "ML25253A274"
+      ],
+      "expected_doc_cited": true,
+      "claims_total": 2,
+      "claims_displayed": 2,
+      "claims_withheld": 0,
+      "quotes_exact": 1,
+      "quotes_fuzzy": 1,
+      "quotes_failed": 0,
+      "seconds": 28.266,
+      "audit_id": "ff9469c35e154996",
+      "error": ""
+    },
+    {
+      "question": "What storage options are assessed for molten salt reactor fuel salt waste?",
+      "answerable": true,
+      "status": "partial",
+      "abstained_correctly": null,
+      "expected_docs": [
+        "ML25241A320"
+      ],
+      "cited_docs": [
+        "ML25241A320"
+      ],
+      "expected_doc_cited": true,
+      "claims_total": 6,
+      "claims_displayed": 5,
+      "claims_withheld": 1,
+      "quotes_exact": 4,
+      "quotes_fuzzy": 1,
+      "quotes_failed": 1,
+      "seconds": 35.537,
+      "audit_id": "de5ec67136f94190",
+      "error": ""
+    },
+    {
+      "question": "What does the report say about the differences in design margin between ASME Section III Division 5 and Section VIII?",
+      "answerable": true,
+      "status": "answered",
+      "abstained_correctly": null,
+      "expected_docs": [
+        "ML25059A010",
+        "ML25133A109"
+      ],
+      "cited_docs": [
+        "ML25059A010",
+        "ML25133A109"
+      ],
+      "expected_doc_cited": true,
+      "claims_total": 5,
+      "claims_displayed": 5,
+      "claims_withheld": 0,
+      "quotes_exact": 5,
+      "quotes_fuzzy": 0,
+      "quotes_failed": 0,
+      "seconds": 35.493,
+      "audit_id": "d5d224119e5245fe",
+      "error": ""
+    },
+    {
+      "question": "What is the melting point of pure sodium metal in degrees Celsius?",
+      "answerable": false,
+      "status": "not_found",
+      "abstained_correctly": true,
+      "expected_docs": [],
+      "cited_docs": [],
+      "expected_doc_cited": null,
+      "claims_total": 0,
+      "claims_displayed": 0,
+      "claims_withheld": 0,
+      "quotes_exact": 0,
+      "quotes_fuzzy": 0,
+      "quotes_failed": 0,
+      "seconds": 10.762,
+      "audit_id": "7341efda27314804",
+      "error": ""
+    },
+    {
+      "question": "Who won the 2024 Nobel Prize in Physics?",
+      "answerable": false,
+      "status": "not_found",
+      "abstained_correctly": true,
+      "expected_docs": [],
+      "cited_docs": [],
+      "expected_doc_cited": null,
+      "claims_total": 0,
+      "claims_displayed": 0,
+      "claims_withheld": 0,
+      "quotes_exact": 0,
+      "quotes_fuzzy": 0,
+      "quotes_failed": 0,
+      "seconds": 9.68,
+      "audit_id": "1a9b4497025c4585",
+      "error": ""
+    },
+    {
+      "question": "What is the licensed thermal power of the Vogtle Unit 3 AP1000 reactor?",
+      "answerable": false,
+      "status": "not_found",
+      "abstained_correctly": true,
+      "expected_docs": [],
+      "cited_docs": [],
+      "expected_doc_cited": null,
+      "claims_total": 0,
+      "claims_displayed": 0,
+      "claims_withheld": 0,
+      "quotes_exact": 0,
+      "quotes_fuzzy": 0,
+      "quotes_failed": 0,
+      "seconds": 16.609,
+      "audit_id": "60d507d2e3ac4688",
+      "error": ""
+    }
+  ]
+}

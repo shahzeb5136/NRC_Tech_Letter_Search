@@ -1,0 +1,37 @@
+# Groundedness evaluation set.
+# answerable: true  -> the corpus should contain a verifiable answer (verified claims expected)
+# answerable: false -> outside the corpus; the correct behaviour is status "not_found" (abstention)
+questions:
+  - q: "What off-gas treatment technologies are considered for molten salt reactors and what are their main limitations?"
+    answerable: true
+    docs: [ML25002A104]
+  - q: "Which sorbent materials are evaluated for iodine capture in molten salt reactor off-gas systems?"
+    answerable: true
+    docs: [ML25002A104]
+  - q: "How does the reexamination of NUREG-1829 change the LOCA frequency estimates?"
+    answerable: true
+    docs: [ML24193A122]
+  - q: "What reference electrodes are discussed for electrochemical monitoring in molten salts?"
+    answerable: true
+    docs: [ML25080A225]
+  - q: "What are the main knowledge gaps for electrical cable degradation in long-term operation?"
+    answerable: true
+    docs: [ML25233A048]
+  - q: "Which chemical process safety hazards are identified for TRISO fuel fabrication facilities?"
+    answerable: true
+    docs: [ML25230A132]
+  - q: "What machine learning approaches were investigated for BWR recirculation pump condition monitoring?"
+    answerable: true
+    docs: [ML25253A274]
+  - q: "What storage options are assessed for molten salt reactor fuel salt waste?"
+    answerable: true
+    docs: [ML25241A320]
+  - q: "What does the report say about the differences in design margin between ASME Section III Division 5 and Section VIII?"
+    answerable: true
+    docs: [ML25059A010, ML25133A109]
+  - q: "What is the melting point of pure sodium metal in degrees Celsius?"
+    answerable: false
+  - q: "Who won the 2024 Nobel Prize in Physics?"
+    answerable: false
+  - q: "What is the licensed thermal power of the Vogtle Unit 3 AP1000 reactor?"
+    answerable: false
