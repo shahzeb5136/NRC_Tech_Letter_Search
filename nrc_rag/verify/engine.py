@@ -24,6 +24,7 @@ from nrc_rag.index.store import ChunkRow, IndexStore
 from nrc_rag.llm.base import Generation, LLMProvider, build_context
 from nrc_rag.llm.prompts import PROMPT_VERSION
 from nrc_rag.llm.schema import Claim
+from nrc_rag.render.figures import figure_png
 from nrc_rag.render.page_render import locate_text, quote_candidates
 from nrc_rag.utils import normalize_text, utc_now_iso
 from nrc_rag.verify.quote_verifier import QuoteCheck, verify_quote
@@ -232,7 +233,7 @@ class GroundedEngine:
                 self._finish(va, timings, t_start)
                 return va
 
-            items = build_context(retrieved, self.store.get_figure, self.settings.max_figures_in_context, attach_images)
+            items = build_context(retrieved, lambda fid: figure_png(self.store, fid), self.settings.max_figures_in_context, attach_images)
             context_map: dict[str, ChunkRow] = {r.chunk.chunk_id: r.chunk for r in retrieved}
 
             say(f"Generating grounded answer with {self.provider.describe()}…")

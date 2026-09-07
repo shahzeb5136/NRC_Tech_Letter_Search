@@ -16,6 +16,7 @@ from nrc_rag.index.retriever import HybridRetriever
 from nrc_rag.index.store import IndexStore
 from nrc_rag.llm import get_provider
 from nrc_rag.llm.base import LLMProvider
+from nrc_rag.render.figures import figure_png
 from nrc_rag.render.page_render import render_page, render_region
 from nrc_rag.verify.engine import GroundedEngine
 
@@ -45,13 +46,18 @@ def settings() -> Settings:
 
 @st.cache_resource(show_spinner="Opening the local index…")
 def store() -> IndexStore:
-    return IndexStore(settings().index_dir)
+    return IndexStore(settings().index_dir, data_dir=settings().data_dir)
 
 
 @st.cache_resource(show_spinner="Loading embedding model (first time only)…")
 def embedder() -> Embedder:
     s = settings()
-    return Embedder(s.embedding_model, s.embedding_max_seq)
+    return Embedder(
+        s.embedding_model,
+        s.embedding_max_seq,
+        max_positions=s.embedding_max_positions or None,
+        threads=s.torch_threads or None,
+    )
 
 
 @st.cache_resource(show_spinner="Loading re-ranker…")
@@ -97,6 +103,15 @@ def page_png(pdf_path: str, page_number: int, rects: tuple, dpi: int, approximat
 @st.cache_data(show_spinner=False, max_entries=200)
 def region_png(pdf_path: str, page_number: int, bbox: tuple, dpi: int) -> bytes:
     return render_region(pdf_path, page_number, list(bbox), dpi=dpi)
+
+
+@st.cache_data(show_spinner=False, max_entries=120)
+def figure_image(figure_id: Optional[str]) -> Optional[bytes]:
+    """Figure PNG: the cached file when ingestion left one, otherwise cropped
+    from the source PDF. Lets a deployment ship the index without the images."""
+    if not figure_id:
+        return None
+    return figure_png(store(), figure_id, settings().figure_dpi)
 
 
 @st.cache_data(show_spinner=False)

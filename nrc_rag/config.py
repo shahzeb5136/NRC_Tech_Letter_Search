@@ -36,6 +36,12 @@ class Settings(BaseSettings):
     # ------------------------------------------------------- embeddings / retrieval
     embedding_model: str = Field(default="jinaai/jina-embeddings-v2-base-en", validation_alias=AliasChoices("NRC_EMBEDDING_MODEL"))
     embedding_max_seq: int = Field(default=512, validation_alias=AliasChoices("NRC_EMBEDDING_MAX_SEQ"))
+    # Cap the model's declared position count. Long-context embedders allocate an
+    # attention bias sized to max_position_embeddings at load time; for
+    # jina-embeddings-v2 (8192) that tensor alone is ~3.4 GB. Anything above the
+    # sequence length we actually use is dead weight. Set 0 to disable the cap.
+    embedding_max_positions: int = Field(default=1024, validation_alias=AliasChoices("NRC_EMBEDDING_MAX_POSITIONS"))
+    torch_threads: int = Field(default=2, validation_alias=AliasChoices("NRC_TORCH_THREADS"))
     reranker_model: str = Field(default="cross-encoder/ms-marco-MiniLM-L-6-v2", validation_alias=AliasChoices("NRC_RERANKER_MODEL"))
     enable_reranker: bool = Field(default=True, validation_alias=AliasChoices("NRC_ENABLE_RERANKER"))
     top_k_dense: int = Field(default=30, validation_alias=AliasChoices("NRC_TOP_K_DENSE"))

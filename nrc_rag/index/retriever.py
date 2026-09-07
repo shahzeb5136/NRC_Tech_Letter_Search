@@ -105,18 +105,8 @@ class HybridRetriever:
         kind_filter = set(kinds) if kinds else None
 
         # dense
-        where_clauses = []
-        if doc_filter:
-            where_clauses.append({"doc_id": {"$in": sorted(doc_filter)}})
-        if kind_filter:
-            where_clauses.append({"kind": {"$in": sorted(kind_filter)}})
-        where = None
-        if len(where_clauses) == 1:
-            where = where_clauses[0]
-        elif len(where_clauses) > 1:
-            where = {"$and": where_clauses}
         qvec = self.embedder.encode_query(query)
-        dense = self.store.query_vectors(qvec, self.settings.top_k_dense, where)
+        dense = self.store.query_vectors(qvec, self.settings.top_k_dense, doc_ids=doc_filter, kinds=kind_filter)
         dense_rank = {cid: (i + 1, s) for i, (cid, s) in enumerate(dense)}
 
         # lexical

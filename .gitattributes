@@ -1,0 +1,8 @@
+# Never let end-of-line conversion touch the shipped index or other binaries.
+# A checkout with core.autocrlf=true would otherwise risk corrupting them.
+*.npz  binary
+*.db   binary
+*.pdf  binary
+*.png  binary
+*.jpg  binary
+*.pptx binary

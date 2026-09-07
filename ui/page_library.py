@@ -85,8 +85,9 @@ def render() -> None:
             cols = st.columns(3)
             for i, f in enumerate(subset):
                 with cols[i % 3]:
-                    if Path(f.image_path).exists():
-                        _show_image(Path(f.image_path).read_bytes(), caption=f"p.{f.page_number} · {f.caption[:120] if f.caption else 'no caption detected'}")
+                    png = common.figure_image(f.figure_id)
+                    if png:
+                        _show_image(png, caption=f"p.{f.page_number} · {f.caption[:120] if f.caption else 'no caption detected'}")
                     if f.description:
                         with st.expander("AI description"):
                             st.write(f.description)

@@ -2,9 +2,19 @@
 .env
 .streamlit/secrets.toml
 
-# generated index and audit trail (leading slash = project root only, so that the
-# nrc_rag/index and nrc_rag/audit source packages are still tracked)
-/index/
+# The index IS shipped, so a deployed app has something to search: catalog.db
+# (source text the verifier checks against), vectors.npz (embeddings) and
+# manifest.json are tracked. Only the derivable parts are ignored:
+#   figures/  ~70 MB of PNGs that are re-cropped from the PDFs on demand
+#   chroma/   the old vector store, replaced by vectors.npz
+# Leading slashes matter - unanchored "index/" would also exclude the
+# nrc_rag/index source package.
+/index/figures/
+/index/chroma/
+/index/figure_descriptions_cache.json
+/index/*.tmp
+
+# the query audit trail is local runtime data
 /audit/
 /index_test_tmp/
 *.log

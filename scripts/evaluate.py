@@ -46,8 +46,8 @@ def main() -> int:
     if provider is None:
         print("No provider configured (set an API key in .env)")
         return 2
-    store = IndexStore(s.index_dir)
-    retriever = HybridRetriever(store, Embedder(s.embedding_model, s.embedding_max_seq), s, try_load_reranker(s.reranker_model) if s.enable_reranker else None)
+    store = IndexStore(s.index_dir, data_dir=s.data_dir)
+    retriever = HybridRetriever(store, Embedder(s.embedding_model, s.embedding_max_seq, max_positions=s.embedding_max_positions or None, threads=s.torch_threads or None), s, try_load_reranker(s.reranker_model) if s.enable_reranker else None)
     engine = GroundedEngine(store, retriever, s, AuditLog(s.audit_dir), provider)
 
     qs = yaml.safe_load(Path(args.questions).read_text(encoding="utf-8"))["questions"]

@@ -110,8 +110,9 @@ def _render_citation(cit, s) -> None:
         st.markdown(badge(ch.status, {"exact": "Verbatim match", "fuzzy": "Near-verbatim match"}.get(ch.status, ch.status)) + f" <span class='nrc-meta'>{esc(ch.reason)}</span>", unsafe_allow_html=True)
         if ch.status == "fuzzy" and ch.matched_text:
             st.caption(f"Closest source text: “{ch.matched_text}”")
-        if cit.image_path and Path(cit.image_path).exists():
-            _show_image(Path(cit.image_path).read_bytes(), caption=cit.caption or "Figure")
+        fig_png = common.figure_image(cit.figure_id) if cit.figure_id else None
+        if fig_png:
+            _show_image(fig_png, caption=cit.caption or "Figure")
             st.caption("Figure-derived statements are the model's reading of this image. Verify against the figure.")
         cols = st.columns([1, 1, 3])
         show_page = cols[0].checkbox("Show page", value=True, key=f"showpage_{cit.number}_{ch.chunk_id}")
@@ -189,8 +190,9 @@ def _render_search(results, s) -> None:
             st.write(c.text)
             if c.kind == "figure" and c.figure_id:
                 fig = common.store().get_figure(c.figure_id)
-                if fig and Path(fig.image_path).exists():
-                    _show_image(Path(fig.image_path).read_bytes(), caption=fig.caption or "Figure")
+                fig_png = common.figure_image(c.figure_id)
+                if fig_png:
+                    _show_image(fig_png, caption=(fig.caption if fig else "") or "Figure")
             doc = common.store().get_document(c.doc_id)
             if doc and st.button("Open PDF", key=f"sopen_{c.chunk_id}"):
                 ok, msg = common.open_in_system_viewer(doc.path)

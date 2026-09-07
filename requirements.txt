@@ -1,5 +1,10 @@
 # NRC Technical Letter Query System - runtime dependencies
 # Python 3.11+ (developed on 3.12). Install with:  pip install -r requirements.txt
+#
+# CPU-only torch. Without this index URL pip pulls the CUDA build, which is
+# several GB of GPU libraries this project never uses - on a small host that is
+# the difference between a slow cold start and a failed one.
+--extra-index-url https://download.pytorch.org/whl/cpu
 
 # UI
 streamlit>=1.38
@@ -7,8 +12,9 @@ streamlit>=1.38
 # PDF extraction and rendering
 pymupdf>=1.24
 
-# Local index (vectors + lexical)
-chromadb>=1.0
+# Local index: embeddings + lexical retrieval.
+# Dense vectors live in a plain .npz (see nrc_rag/index/vectors.py), so there is
+# no vector-database dependency.
 rank-bm25>=0.2.2
 sentence-transformers>=3.0
 transformers>=4.40

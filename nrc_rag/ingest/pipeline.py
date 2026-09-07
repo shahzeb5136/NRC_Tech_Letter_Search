@@ -20,6 +20,7 @@ from nrc_rag.index.embeddings import Embedder
 from nrc_rag.index.store import IndexStore
 from nrc_rag.ingest.chunker import Chunk, TokenCounter, chunk_document, figure_chunk_text
 from nrc_rag.ingest.pdf_extract import DocumentData, extract_document
+from nrc_rag.render.figures import figure_png
 from nrc_rag.utils import sha256_file, utc_now_iso
 
 log = logging.getLogger(__name__)
@@ -81,7 +82,7 @@ def ingest(
     t0 = time.time()
     say = progress or (lambda msg: log.info(msg))
     report = IngestReport()
-    store = IndexStore(settings.index_dir)
+    store = IndexStore(settings.index_dir, data_dir=settings.data_dir)
     manifest = store.read_manifest()
     manifest.setdefault("documents", {})
     manifest["pipeline_version"] = PIPELINE_VERSION
@@ -132,7 +133,7 @@ def ingest(
 
             if embedder is None:
                 say(f"[embed] loading embedding model {settings.embedding_model} ...")
-                embedder = Embedder(settings.embedding_model, settings.embedding_max_seq)
+                embedder = Embedder(settings.embedding_model, settings.embedding_max_seq, max_positions=settings.embedding_max_positions or None, threads=settings.torch_threads or None)
             say(f"[embed] {doc_id}: encoding {len(chunks)} chunks ...")
             vectors = embedder.encode([c.text for c in chunks], batch_size=16)
             store.add_vectors(chunks, vectors, {"tlr_number": doc.tlr_number, "title": doc.title})
@@ -192,7 +193,7 @@ def describe_figures(
     Returns the number of figures described.
     """
     say = progress or (lambda msg: log.info(msg))
-    store = IndexStore(settings.index_dir)
+    store = IndexStore(settings.index_dir, data_dir=settings.data_dir)
     cache = _load_description_cache(store)
     figures = store.list_figures(undescribed_only=not force)
     if doc_ids:
@@ -204,10 +205,9 @@ def describe_figures(
     counter = TokenCounter()
     docs = {d.doc_id: d for d in store.list_documents()}
     for fig in figures:
-        try:
-            png = Path(fig.image_path).read_bytes()
-        except Exception as exc:
-            say(f"[skip] {fig.figure_id}: cannot read image ({exc})")
+        png = figure_png(store, fig.figure_id, settings.figure_dpi)
+        if not png:
+            say(f"[skip] {fig.figure_id}: no image available")
             continue
         cached = cache.get(fig.sha1)
         if cached and cached.get("description") and not force:
@@ -227,7 +227,7 @@ def describe_figures(
         text = figure_chunk_text(fig.doc_id, doc.tlr_number if doc else "", fig.page_number, fig.caption, fig.nearby_text, description)
         store.update_chunk_text(fig.figure_id, text, counter.count(text))
         if embedder is None:
-            embedder = Embedder(settings.embedding_model, settings.embedding_max_seq)
+            embedder = Embedder(settings.embedding_model, settings.embedding_max_seq, max_positions=settings.embedding_max_positions or None, threads=settings.torch_threads or None)
         if chunk is not None:
             chunk.text = text
             vec = embedder.encode([text])

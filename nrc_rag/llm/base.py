@@ -7,7 +7,6 @@ import io
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Optional
 
 from nrc_rag.index.retriever import RetrievedChunk
@@ -83,21 +82,25 @@ def _downscale_png(png: bytes, max_edge: int = MAX_IMAGE_EDGE) -> bytes:
         return png
 
 
-def build_context(retrieved: list[RetrievedChunk], figure_lookup, max_figures: int, attach_images: bool = True) -> list[ContextItem]:
-    """Turn retrieved chunks into context items; attach PNGs for the first *max_figures* figure chunks."""
+def build_context(retrieved: list[RetrievedChunk], figure_image, max_figures: int, attach_images: bool = True) -> list[ContextItem]:
+    """Turn retrieved chunks into context items; attach PNGs for the first *max_figures* figure chunks.
+
+    ``figure_image`` takes a figure id and returns PNG bytes (or None) - it resolves
+    a cached file when there is one and re-renders from the PDF when there is not.
+    """
     items: list[ContextItem] = []
     attached = 0
     for r in retrieved:
         c = r.chunk
         png = None
         if c.kind == "figure" and attach_images and attached < max_figures and c.figure_id:
-            fig = figure_lookup(c.figure_id)
-            if fig is not None and fig.image_path and Path(fig.image_path).exists():
-                try:
-                    png = _downscale_png(Path(fig.image_path).read_bytes())
+            try:
+                raw = figure_image(c.figure_id)
+                if raw:
+                    png = _downscale_png(raw)
                     attached += 1
-                except Exception as exc:  # pragma: no cover
-                    log.warning("could not read figure %s: %s", c.figure_id, exc)
+            except Exception as exc:  # pragma: no cover
+                log.warning("could not load figure %s: %s", c.figure_id, exc)
         items.append(
             ContextItem(
                 chunk_id=c.chunk_id,

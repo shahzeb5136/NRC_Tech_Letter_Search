@@ -45,7 +45,7 @@ def main() -> int:
         from nrc_rag.index.embeddings import Embedder, try_load_reranker
 
         say(f"loading embedding model {settings.embedding_model}")
-        Embedder(settings.embedding_model, settings.embedding_max_seq)
+        Embedder(settings.embedding_model, settings.embedding_max_seq, max_positions=settings.embedding_max_positions or None, threads=settings.torch_threads or None)
         if settings.enable_reranker:
             say(f"loading reranker {settings.reranker_model}")
             ok = try_load_reranker(settings.reranker_model)

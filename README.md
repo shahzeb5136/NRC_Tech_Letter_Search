@@ -19,8 +19,9 @@ page, located on that page, and recorded in an audit trail. Anything that cannot
 8. [Evaluation](#evaluation)
 9. [Tests](#tests)
 10. [Publishing to GitHub](#publishing-to-github)
-11. [Limitations](#limitations)
-12. [Project layout](#project-layout)
+11. [Deployment](#deployment)
+12. [Limitations](#limitations)
+13. [Project layout](#project-layout)
 
 ## What you get
 
@@ -109,7 +110,9 @@ All settings come from `.env` / environment variables (see `.env.example`). Key 
 | `NRC_MAX_FIGURES` | `4` | Figure images attached per question |
 | `NRC_FUZZY_THRESHOLD` | `0.92` | Below this similarity a quote is rejected |
 | `NRC_ENABLE_SUPPORT_CHECK` | `true` | Second-pass entailment check |
-| `NRC_INDEX_DIR` / `NRC_AUDIT_DIR` | `index/` / `audit/` | Where the index and audit log live (both git-ignored) |
+| `NRC_INDEX_DIR` / `NRC_AUDIT_DIR` | `index/` / `audit/` | Where the index and audit log live |
+| `NRC_EMBEDDING_MAX_POSITIONS` | `1024` | Caps the embedder's declared position count. See *Deployment* — this is the difference between 1.6 GB and 4.7 GB of memory |
+| `NRC_TORCH_THREADS` | `2` | Torch thread cap, keeps memory predictable on small hosts |
 
 Keys can also be provided through `.streamlit/secrets.toml` (git-ignored) for Streamlit Community Cloud.
 
@@ -122,7 +125,7 @@ Data/*.pdf
    ▼
 chunks  (page-bounded verbatim slices, ~380 tokens, 50 overlap; kinds: text | table | figure)
    │
-   ├─► ChromaDB (local, cosine) ← Jina v2 embeddings (local, CPU)
+   ├─► vectors.npz (local, exact cosine) ← Jina v2 embeddings (local, CPU)
    └─► BM25 (rank-bm25)             ┐
                                     ├─► reciprocal-rank fusion → cross-encoder re-rank → top-k
    question ─► query embedding ─────┘
@@ -156,8 +159,10 @@ Provider notes:
 ## Figures and diagrams
 
 * Figures are detected per page from embedded raster images and clustered vector drawings; sub-panels sharing a caption
-  are merged; repeated logos and uncaptioned decorations are dropped. Each figure is rendered to `index/figures/…` at
-  150 dpi with its caption and indexed as a passage (`<doc>:p<page>:f<n>`) using caption + surrounding text.
+  are merged; repeated logos and uncaptioned decorations are dropped. Each figure is cached to `index/figures/…` at
+  150 dpi with its caption and indexed as a passage. Those PNGs are a cache, not part of the index: when the file is
+  absent the crop is re-rendered from the PDF using the stored bounding box, which is why a deployment can ship the
+  index without ~70 MB of images. Each figure is indexed as a passage (`<doc>:p<page>:f<n>`) using caption + surrounding text.
 * When a figure passage is retrieved, its image can be attached to the model request so plots and schematics can be read.
   Resulting statements are labelled **figure-derived** and shown next to the figure.
 * `--describe-figures` adds a clearly labelled AI description to the figure passage (retrieval only, cached by image hash).
@@ -192,13 +197,42 @@ the chunker's verbatim-slice/provenance guarantee, and the conversion of Claude 
 
 ## Publishing to GitHub
 
-`.gitignore` already excludes `.env`, `.streamlit/secrets.toml`, the generated `index/`, the `audit/` log, caches and
-Google-Drive artefacts, and the un-redacted v1 scripts. Before the first push:
+`.gitignore` already excludes `.env`, `.streamlit/secrets.toml`, the `audit/` log, caches, Google-Drive artefacts and
+the un-redacted v1 scripts. The index **is** committed (see *Deployment*) apart from its derivable parts. Before the first push:
 
 1. Confirm no key is present: `git grep -n -E "sk-ant-|llx-|api_key ?= ?\"" -- ':!legacy/README.md'` should print nothing.
 2. Decide whether `Data/` (≈150 MB of public NRC PDFs) belongs in the repository or should be downloaded separately
    (accession numbers are in the Library page; ADAMS URL pattern `https://www.nrc.gov/docs/MLyyxx/MLyyxxxxxxxx.pdf`).
 3. **Rotate** the Core42 and LlamaCloud keys that were hard-coded in the v1 scripts; they lived in plain text.
+
+## Deployment
+
+The app runs on a small host (it is deployed on Streamlit Community Cloud, ~2.7 GB of memory) because of two
+decisions that are easy to get wrong:
+
+**The index is committed.** A cloud host has an ephemeral filesystem, so an index built at deploy time is lost on
+every restart, and rebuilding it takes about 15 minutes. Three files are tracked, 20 MB in total:
+
+| File | Size | Why |
+|---|---|---|
+| `index/catalog.db` | 10 MB | Page text and chunks — the source of truth the verifier matches quotes against |
+| `index/vectors.npz` | 10 MB | Embeddings, as a plain normalised float32 array |
+| `index/manifest.json` | 12 KB | What was indexed, with file hashes |
+
+Not committed, because both are derivable: `index/figures/` (~70 MB of PNGs, re-cropped from the PDFs on demand)
+and the figure-description cache.
+
+**The embedder's position count is capped.** `jina-embeddings-v2` declares 8192 positions and allocates an
+attention bias of that size when it loads — a single ~3.4 GB tensor, against 549 MB of actual weights. Since chunks
+are built to 512 tokens, everything above the cap is dead weight. `NRC_EMBEDDING_MAX_POSITIONS=1024` drops peak
+memory for a full search from ~4.7 GB to ~1.6 GB and leaves embeddings bit-for-bit identical.
+
+Dense retrieval is a dot product against that array rather than a vector database: at ~3k passages an exact search
+is microseconds, and a plain array has no version-portability problem when a prebuilt index is committed and
+restored on another machine.
+
+`requirements.txt` pins CPU-only torch through PyTorch's CPU index, otherwise pip installs the CUDA build and the
+cold start pays for gigabytes of GPU libraries that are never used.
 
 ## Limitations
 
@@ -220,12 +254,14 @@ nrc_rag/
   ingest/chunker.py        page-bounded verbatim chunks with bbox + section
   ingest/pipeline.py       incremental indexing, figure descriptions
   index/embeddings.py      local embedder + cross-encoder re-ranker
-  index/store.py           SQLite catalog + ChromaDB vectors + manifest
+  index/store.py           SQLite catalog + vectors + manifest
+  index/vectors.py         portable .npz vector store with exact cosine search
   index/retriever.py       hybrid retrieval (dense + BM25 + RRF + re-rank)
   llm/                     provider adapters, prompts, answer schema/parsing
   verify/quote_verifier.py deterministic quote verification
   verify/engine.py         end-to-end grounded answer + audit record
   render/page_render.py    locate quotes on pages, render highlights
+  render/figures.py        figure images, from cache or re-cropped from the PDF
   audit/log.py             append-only JSONL audit trail
 scripts/ingest.py          build/update the index, warm models, describe figures
 scripts/evaluate.py        groundedness evaluation harness

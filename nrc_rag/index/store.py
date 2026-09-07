@@ -2,7 +2,8 @@
 
 * ``catalog.db`` (SQLite) - documents, page text with block geometry, chunks, figures.
   This is the source of truth the verifier checks quotes against.
-* ``chroma/`` (ChromaDB) - dense vectors for the chunks, keyed by chunk_id.
+* ``vectors.npz`` - dense embeddings for the chunks, keyed by chunk_id. A plain
+  array rather than a vector database: see ``nrc_rag/index/vectors.py``.
 * ``manifest.json`` - what was indexed, with file hashes and pipeline versions.
 """
 
@@ -18,13 +19,12 @@ from typing import Any, Iterable, Optional
 import numpy as np
 
 from nrc_rag.config import PIPELINE_VERSION
+from nrc_rag.index.vectors import VECTORS_FILE, VectorStore
 from nrc_rag.ingest.chunker import Chunk
 from nrc_rag.ingest.pdf_extract import DocumentData
 from nrc_rag.utils import utc_now_iso
 
 log = logging.getLogger(__name__)
-
-COLLECTION_NAME = "nrc_chunks"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS documents (
@@ -152,30 +152,48 @@ class FigureRow:
 
 
 class IndexStore:
-    def __init__(self, index_dir: Path, embedding_dim: Optional[int] = None) -> None:
+    def __init__(self, index_dir: Path, embedding_dim: Optional[int] = None, data_dir: Optional[Path] = None) -> None:
         self.index_dir = Path(index_dir)
         self.index_dir.mkdir(parents=True, exist_ok=True)
         self.db_path = self.index_dir / "catalog.db"
         self.figures_dir = self.index_dir / "figures"
         self.manifest_path = self.index_dir / "manifest.json"
+        # An index is portable: it may have been built on another machine, so the
+        # absolute PDF paths recorded at build time will not resolve here. Source
+        # files are re-found by accession number under the data directory.
+        self.data_dir = Path(data_dir) if data_dir else self.index_dir.parent / "Data"
+        self._path_cache: dict[str, str] = {}
+        self._scanned = False
         self.conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
         self.conn.execute("PRAGMA journal_mode=DELETE")
         self.conn.executescript(SCHEMA)
-        self._chroma = None
-        self._collection = None
+        self._vectors: Optional[VectorStore] = None
         self._embedding_dim = embedding_dim
 
-    # ----------------------------------------------------------------- chroma
-    @property
-    def collection(self):
-        if self._collection is None:
-            import chromadb
+    # ------------------------------------------------------------ source paths
+    def _scan_data_dir(self) -> None:
+        if self._scanned:
+            return
+        self._scanned = True
+        try:
+            for p in self.data_dir.rglob("*.pdf"):
+                self._path_cache.setdefault(p.stem, str(p))
+        except Exception as exc:  # pragma: no cover
+            log.warning("could not scan %s for source PDFs: %s", self.data_dir, exc)
 
-            self._chroma = chromadb.PersistentClient(path=str(self.index_dir / "chroma"))
-            self._collection = self._chroma.get_or_create_collection(
-                COLLECTION_NAME, metadata={"hnsw:space": "cosine"}
-            )
-        return self._collection
+    def resolve_doc_path(self, doc_id: str, stored_path: str) -> str:
+        """The usable path to a document's PDF on *this* machine."""
+        if stored_path and Path(stored_path).exists():
+            return stored_path
+        self._scan_data_dir()
+        return self._path_cache.get(doc_id, stored_path)
+
+    # ---------------------------------------------------------------- vectors
+    @property
+    def vectors(self) -> VectorStore:
+        if self._vectors is None:
+            self._vectors = VectorStore(self.index_dir / VECTORS_FILE)
+        return self._vectors
 
     # --------------------------------------------------------------- manifest
     def read_manifest(self) -> dict:
@@ -204,7 +222,7 @@ class IndexStore:
         for r in cur.fetchall():
             rows.append(
                 DocumentRow(
-                    doc_id=r[0], path=r[1], sha256=r[2], title=r[3] or "", tlr_number=r[4] or "", report_date=r[5] or "",
+                    doc_id=r[0], path=self.resolve_doc_path(r[0], r[1]), sha256=r[2], title=r[3] or "", tlr_number=r[4] or "", report_date=r[5] or "",
                     organization=r[6] or "", page_count=r[7] or 0, toc=json.loads(r[8] or "[]"), ingested_at=r[9] or "",
                     pipeline_version=r[10] or "", embedding_model=r[11] or "", chunk_count=r[12], figure_count=r[13],
                 )
@@ -223,10 +241,8 @@ class IndexStore:
             self.conn.execute("DELETE FROM pages WHERE doc_id=?", (doc_id,))
             self.conn.execute("DELETE FROM chunks WHERE doc_id=?", (doc_id,))
             self.conn.execute("DELETE FROM figures WHERE doc_id=?", (doc_id,))
-        try:
-            self.collection.delete(where={"doc_id": doc_id})
-        except Exception as exc:  # pragma: no cover
-            log.warning("chroma delete failed for %s: %s", doc_id, exc)
+        self.vectors.delete_doc(doc_id)
+        self.vectors.save()
 
     def upsert_document(self, doc: DocumentData, chunks: list[Chunk], embedding_model: str) -> None:
         with self.conn:
@@ -367,53 +383,32 @@ class IndexStore:
             )
 
     # ---------------------------------------------------------------- vectors
-    def add_vectors(self, chunks: list[Chunk | ChunkRow], vectors: np.ndarray, doc_meta: dict[str, Any]) -> None:
+    def add_vectors(self, chunks: list[Chunk | ChunkRow], vectors: np.ndarray, doc_meta: Optional[dict[str, Any]] = None) -> None:
+        """Store (or replace) the embeddings for these chunks and persist them."""
         if not chunks:
             return
-        ids = [c.chunk_id for c in chunks]
-        metadatas = []
-        for c in chunks:
-            metadatas.append(
-                {
-                    "doc_id": c.doc_id,
-                    "page": int(c.page_number),
-                    "kind": c.kind,
-                    "section": (c.section or "")[:200],
-                    "tlr": doc_meta.get("tlr_number", "") or "",
-                    "title": (doc_meta.get("title", "") or "")[:200],
-                }
-            )
-        docs = [c.text[:4000] for c in chunks]
-        for i in range(0, len(ids), 256):
-            self.collection.upsert(
-                ids=ids[i : i + 256],
-                embeddings=vectors[i : i + 256].tolist(),
-                metadatas=metadatas[i : i + 256],
-                documents=docs[i : i + 256],
-            )
+        self.vectors.upsert(
+            [c.chunk_id for c in chunks],
+            [c.doc_id for c in chunks],
+            [c.kind for c in chunks],
+            vectors,
+        )
+        self.vectors.save()
 
     def delete_vectors(self, chunk_ids: list[str]) -> None:
         if chunk_ids:
-            self.collection.delete(ids=chunk_ids)
+            self.vectors.delete_ids(chunk_ids)
+            self.vectors.save()
 
-    def query_vectors(self, vector: list[float], n: int, where: Optional[dict] = None) -> list[tuple[str, float]]:
-        kwargs: dict[str, Any] = {"query_embeddings": [vector], "n_results": n, "include": ["distances"]}
-        if where:
-            kwargs["where"] = where
+    def query_vectors(self, vector: list[float], n: int, doc_ids: Optional[set[str]] = None, kinds: Optional[set[str]] = None) -> list[tuple[str, float]]:
         try:
-            res = self.collection.query(**kwargs)
-        except Exception as exc:
+            return self.vectors.query(vector, n, doc_ids=doc_ids, kinds=kinds)
+        except Exception as exc:  # pragma: no cover
             log.warning("vector query failed: %s", exc)
             return []
-        ids = res.get("ids", [[]])[0]
-        dists = res.get("distances", [[]])[0]
-        return [(cid, 1.0 - float(d)) for cid, d in zip(ids, dists)]
 
     def vector_count(self) -> int:
-        try:
-            return int(self.collection.count())
-        except Exception:
-            return 0
+        return self.vectors.count()
 
     # ------------------------------------------------------------------ stats
     def stats(self) -> dict:
