@@ -234,10 +234,15 @@ restored on another machine.
 `requirements.txt` pins CPU-only torch through PyTorch's CPU index, otherwise pip installs the CUDA build and the
 cold start pays for gigabytes of GPU libraries that are never used.
 
-**Pin the host's Python version to 3.12.** This is the one setting that is not in the repository. PyTorch's CPU wheel
-index publishes builds for 3.10-3.13 and none for 3.14, which is the current Streamlit Community Cloud default, so on
-3.14 the embedding stack cannot install and search fails while the rest of the app keeps working. On Streamlit
-Community Cloud: *Manage app -> Settings -> Advanced -> Python version -> 3.12*, then reboot.
+**Dependency versions are pinned for a reason.** The embedding model is loaded with `trust_remote_code=True`, and
+Jina's own `configuration_bert.py` imports `transformers.onnx` — a module removed in transformers 5.0. An
+unpinned install therefore resolves to transformers 5.x and fails at model load with
+`No module named 'transformers.onnx'`, while an older local environment keeps working. `requirements.txt` caps
+transformers to 4.x and sentence-transformers to 5.x (6.x requires transformers>=5) to keep the pair consistent.
+
+**Optional: pin the host's Python to 3.12.** Not required, but PyTorch's CPU wheel index publishes builds for
+3.10–3.13 and none for 3.14. On 3.14 pip falls back to the much larger PyPI build, so cold starts are slower. On
+Streamlit Community Cloud: *Manage app → Settings → Advanced → Python version → 3.12*, then reboot.
 
 **Provider keys are set in the host, not in the repository.** `.env` is deliberately untracked. On Streamlit Community
 Cloud add the key under *Manage app -> Settings -> Secrets*, in TOML form:

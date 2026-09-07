@@ -219,12 +219,12 @@ def render() -> None:
         with st.expander("What went wrong, and how to fix it"):
             st.code(search_error, language=None)
             st.markdown(
-                "This is the environment rather than the code: `torch` and `sentence-transformers` need "
-                "wheels built for the exact Python version the host runs.\n\n"
-                "**On Streamlit Community Cloud** — open *Manage app → Settings → Advanced*, set the Python "
-                "version to **3.12**, and reboot. The CPU-only torch pinned in `requirements.txt` publishes "
-                "wheels for 3.12 but none for 3.14, which is the current Cloud default.\n\n"
-                "**Locally** — `pip install -r requirements.txt` on Python 3.11–3.13."
+                "This is the installed environment rather than the code, and it is almost always a dependency "
+                "version that drifted ahead of what the embedding model expects.\n\n"
+                "`requirements.txt` pins the combination that is known to work. Reinstall against it:\n\n"
+                "```\npip install -r requirements.txt\n```\n\n"
+                "On a hosted deployment, reboot the app so it reinstalls, and check the build log for the "
+                "package that failed."
             )
         st.stop()
 

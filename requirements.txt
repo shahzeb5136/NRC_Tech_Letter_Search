@@ -16,8 +16,14 @@ pymupdf>=1.24
 # Dense vectors live in a plain .npz (see nrc_rag/index/vectors.py), so there is
 # no vector-database dependency.
 rank-bm25>=0.2.2
-sentence-transformers>=3.0
-transformers>=4.40
+# transformers must stay on 4.x. The embedding model is loaded with
+# trust_remote_code=True, and jina-bert-implementation's configuration_bert.py
+# does `from transformers.onnx import OnnxConfig` - a module removed in
+# transformers 5.0, so 5.x fails at model load with
+# "No module named 'transformers.onnx'". sentence-transformers 6.x requires
+# transformers>=5, so it is capped to 5.x to keep the pair consistent.
+sentence-transformers>=5.0,<6
+transformers>=4.41,<5
 torch>=2.2
 numpy>=1.26
 tiktoken>=0.7
