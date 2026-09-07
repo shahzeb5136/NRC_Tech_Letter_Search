@@ -209,6 +209,25 @@ def render() -> None:
         st.code("python scripts/ingest.py", language="bash")
         st.stop()
 
+    search_error = common.retrieval_status()
+    if search_error:
+        st.error(
+            "**Search is unavailable on this host: the embedding model could not be loaded.**\n\n"
+            "The rest of the app still works — the Document Library, Audit Trail and Methodology pages "
+            "read the index directly and need no model."
+        )
+        with st.expander("What went wrong, and how to fix it"):
+            st.code(search_error, language=None)
+            st.markdown(
+                "This is the environment rather than the code: `torch` and `sentence-transformers` need "
+                "wheels built for the exact Python version the host runs.\n\n"
+                "**On Streamlit Community Cloud** — open *Manage app → Settings → Advanced*, set the Python "
+                "version to **3.12**, and reboot. The CPU-only torch pinned in `requirements.txt` publishes "
+                "wheels for 3.12 but none for 3.14, which is the current Cloud default.\n\n"
+                "**Locally** — `pip install -r requirements.txt` on Python 3.11–3.13."
+            )
+        st.stop()
+
     docs = common.store().list_documents()
     prov_name, search_only, use_judge, attach_images, top_k, chosen = _sidebar(s, docs)
 

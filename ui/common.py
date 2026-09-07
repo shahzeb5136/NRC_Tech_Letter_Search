@@ -75,6 +75,22 @@ def retriever() -> HybridRetriever:
     return r
 
 
+def retrieval_status() -> Optional[str]:
+    """``None`` when search is usable, otherwise why it is not.
+
+    The embedding stack (torch, sentence-transformers) is the heaviest thing here
+    and the most likely to be missing or unloadable on a constrained host. When it
+    is, the rest of the app - the document library, the audit trail, the
+    methodology - is still perfectly usable, so this reports the problem instead of
+    letting an import error take the whole page down.
+    """
+    try:
+        retriever()
+        return None
+    except Exception as exc:
+        return f"{type(exc).__name__}: {exc}"
+
+
 @st.cache_resource(show_spinner=False)
 def audit() -> AuditLog:
     return AuditLog(settings().audit_dir)

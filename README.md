@@ -234,6 +234,21 @@ restored on another machine.
 `requirements.txt` pins CPU-only torch through PyTorch's CPU index, otherwise pip installs the CUDA build and the
 cold start pays for gigabytes of GPU libraries that are never used.
 
+**Pin the host's Python version to 3.12.** This is the one setting that is not in the repository. PyTorch's CPU wheel
+index publishes builds for 3.10-3.13 and none for 3.14, which is the current Streamlit Community Cloud default, so on
+3.14 the embedding stack cannot install and search fails while the rest of the app keeps working. On Streamlit
+Community Cloud: *Manage app -> Settings -> Advanced -> Python version -> 3.12*, then reboot.
+
+**Provider keys are set in the host, not in the repository.** `.env` is deliberately untracked. On Streamlit Community
+Cloud add the key under *Manage app -> Settings -> Secrets*, in TOML form:
+
+```toml
+GOOGLE_API_KEY = "..."
+```
+
+Without a key the app runs in search-only mode: retrieval, the library, figures and the audit trail all work, but no
+answers are generated.
+
 ## Limitations
 
 * Retrieval can miss the best passage; the result is then "not found" or a partial answer, never an invented one.
